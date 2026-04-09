@@ -1,0 +1,29 @@
+using ResearchProject.Models;
+using ResearchProject.Repositories;
+
+namespace ResearchProject.Services
+{
+    public class ProductService : IProductService
+    {
+        private readonly IProductRepository _repository;
+
+        public ProductService(IProductRepository repository)
+        {
+            _repository = repository;
+        }
+
+        public IEnumerable<Product> GetAllProducts() => _repository.GetAll();
+
+        public Product? GetProductById(int id) => _repository.GetById(id);
+
+        public Product CreateProduct(Product product)
+        {
+            _repository.Add(product);
+            return product;
+        }
+
+        public bool UpdateProduct(Product product) => _repository.Update(product);
+
+        public bool DeleteProduct(int id) => _repository.Delete(id);
+    }
+}
