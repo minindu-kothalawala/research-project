@@ -1,14 +1,13 @@
-using Microsoft.EntityFrameworkCore;
 using ResearchProject.Data;
 using ResearchProject.Models;
 
 namespace ResearchProject.Repositories
 {
-    public class ProductRepository : IProductRepository
+    public class SqlProductRepository : IProductRepository
     {
-        private readonly AppDbContext _context;
+        private readonly SqlDbContext _context;
 
-        public ProductRepository(AppDbContext context)
+        public SqlProductRepository(SqlDbContext context)
         {
             _context = context;
         }

@@ -10,7 +10,7 @@ using ResearchProject.Data;
 
 namespace ResearchProject.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    [DbContext(typeof(SqlDbContext))]
     [Migration("20260409154639_InitialCreate")]
     partial class InitialCreate
     {

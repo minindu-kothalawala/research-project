@@ -1,7 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
+using ResearchProject.Configuration;
+using ResearchProject.Data;
+using ResearchProject.Factories;
+using ResearchProject.Repositories;
+using ResearchProject.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Bind DatabaseSettings from config
+builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("DatabaseSettings"));
+var dbSettings = builder.Configuration.GetSection("DatabaseSettings").Get<DatabaseSettings>()!;
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -17,18 +26,34 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddDbContext<ResearchProject.Data.AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// --- Database contexts ---
+// SQL (EF Core + PostgreSQL) — scoped per request
+builder.Services.AddDbContext<SqlDbContext>(options =>
+    options.UseNpgsql(dbSettings.PostgreSql.ConnectionString));
 
-builder.Services.AddScoped<ResearchProject.Repositories.IProductRepository, ResearchProject.Repositories.ProductRepository>();
-builder.Services.AddScoped<ResearchProject.Services.IProductService, ResearchProject.Services.ProductService>();
+// MongoDB — singleton (MongoClient manages its own connection pool)
+builder.Services.AddSingleton<MongoDbContext>();
+
+// --- Repository implementations (both registered; factory picks the right one) ---
+builder.Services.AddScoped<SqlProductRepository>();
+builder.Services.AddScoped<MongoProductRepository>();
+
+// --- Factory ---
+builder.Services.AddScoped<IProductRepositoryFactory, ProductRepositoryFactory>();
+
+// IProductRepository resolved dynamically at runtime via factory based on DefaultDb
+builder.Services.AddScoped<IProductRepository>(provider =>
+    provider.GetRequiredService<IProductRepositoryFactory>().Create());
+
+builder.Services.AddScoped<IProductService, ProductService>();
 
 var app = builder.Build();
 
-// Apply pending migrations and ensure the database/tables exist on startup
-using (var scope = app.Services.CreateScope())
+// Apply EF Core migrations only when the active DB is PostgreSql
+if (dbSettings.DefaultDb == "PostgreSql")
 {
-    var db = scope.ServiceProvider.GetRequiredService<ResearchProject.Data.AppDbContext>();
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<SqlDbContext>();
     db.Database.Migrate();
 }
 

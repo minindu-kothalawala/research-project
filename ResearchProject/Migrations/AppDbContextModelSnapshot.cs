@@ -9,7 +9,7 @@ using ResearchProject.Data;
 
 namespace ResearchProject.Migrations
 {
-    [DbContext(typeof(AppDbContext))]
+    [DbContext(typeof(SqlDbContext))]
     partial class AppDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
