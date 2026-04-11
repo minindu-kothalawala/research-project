@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Options;
-using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using ResearchProject.Configuration;
 using ResearchProject.Models;
@@ -12,10 +12,8 @@ namespace ResearchProject.Data
 
         static MongoDbContext()
         {
-            if (!BsonClassMap.IsClassMapRegistered(typeof(Product)))
-            {
-                BsonClassMap.RegisterClassMap<Product>(cm => cm.AutoMap());
-            }
+            var conventions = new ConventionPack { new IgnoreExtraElementsConvention(true) };
+            ConventionRegistry.Register("AppConventions", conventions, _ => true);
         }
 
         public MongoDbContext(IOptions<DatabaseSettings> settings)
@@ -24,6 +22,8 @@ namespace ResearchProject.Data
             _database = client.GetDatabase(settings.Value.MongoDb.DatabaseName);
         }
 
-        public IMongoCollection<Product> Products => _database.GetCollection<Product>("Products");
+        public IMongoCollection<T> GetCollection<T>() where T : BaseEntity =>
+            _database.GetCollection<T>(typeof(T).Name);
     }
 }
+

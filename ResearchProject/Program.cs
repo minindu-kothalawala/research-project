@@ -3,6 +3,9 @@ using Microsoft.OpenApi;
 using ResearchProject.Configuration;
 using ResearchProject.Data;
 using ResearchProject.Factories;
+using ResearchProject.IRepositories;
+using ResearchProject.IServices;
+using ResearchProject.Models;
 using ResearchProject.Repositories;
 using ResearchProject.Services;
 
@@ -13,7 +16,7 @@ builder.Services.Configure<DatabaseSettings>(builder.Configuration.GetSection("D
 var dbSettings = builder.Configuration.GetSection("DatabaseSettings").Get<DatabaseSettings>()!;
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -27,25 +30,28 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // --- Database contexts ---
-// SQL (EF Core + PostgreSQL) — scoped per request
 builder.Services.AddDbContext<SqlDbContext>(options =>
     options.UseNpgsql(dbSettings.PostgreSql.ConnectionString));
 
-// MongoDB — singleton (MongoClient manages its own connection pool)
 builder.Services.AddSingleton<MongoDbContext>();
 
-// --- Repository implementations (both registered; factory picks the right one) ---
-builder.Services.AddScoped<SqlProductRepository>();
-builder.Services.AddScoped<MongoProductRepository>();
+// --- Generic repositories (open generics — one registration covers ALL entity types) ---
+builder.Services.AddScoped(typeof(SqlRepository<>));
+builder.Services.AddScoped(typeof(MongoRepository<>));
 
-// --- Factory ---
-builder.Services.AddScoped<IProductRepositoryFactory, ProductRepositoryFactory>();
+// --- Factory: reads DefaultDb at runtime and returns the correct generic repository ---
+builder.Services.AddScoped<IRepositoryFactory, RepositoryFactory>();
 
-// IProductRepository resolved dynamically at runtime via factory based on DefaultDb
-builder.Services.AddScoped<IProductRepository>(provider =>
-    provider.GetRequiredService<IProductRepositoryFactory>().Create());
+// --- IRepository<T> resolved via factory for each entity ---
+builder.Services.AddScoped<IRepository<Product>>(provider =>
+    provider.GetRequiredService<IRepositoryFactory>().Create<Product>());
 
+builder.Services.AddScoped<IRepository<User>>(provider =>
+    provider.GetRequiredService<IRepositoryFactory>().Create<User>());
+
+// --- Application services ---
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 
@@ -67,22 +73,13 @@ app.UseSwaggerUI(options =>
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-app.UseRouting();
 
 app.UseAuthorization();
 
-app.MapStaticAssets();
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
-    .WithStaticAssets();
-
+app.MapControllers();
 
 app.Run();

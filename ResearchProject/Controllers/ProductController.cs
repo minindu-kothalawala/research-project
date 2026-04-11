@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using ResearchProject.IServices;
 using ResearchProject.Models;
-using ResearchProject.Services;
 
 namespace ResearchProject.Controllers
 {
