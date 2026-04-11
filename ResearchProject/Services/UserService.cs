@@ -1,4 +1,4 @@
-using ResearchProject.IRepositories;
+using ResearchProject.IRepository;
 using ResearchProject.IServices;
 using ResearchProject.Models;
 
@@ -6,9 +6,9 @@ namespace ResearchProject.Services
 {
     public class UserService : IUserService
     {
-        private readonly IRepository<User> _repository;
+        private readonly IUserRepository _repository;
 
-        public UserService(IRepository<User> repository)
+        public UserService(IUserRepository repository)
         {
             _repository = repository;
         }

@@ -4,9 +4,11 @@ using ResearchProject.Configuration;
 using ResearchProject.Data;
 using ResearchProject.Factories;
 using ResearchProject.IRepositories;
+using ResearchProject.IRepository;
 using ResearchProject.IServices;
 using ResearchProject.Models;
 using ResearchProject.Repositories;
+using ResearchProject.Repository;
 using ResearchProject.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,6 +50,10 @@ builder.Services.AddScoped<IRepository<Product>>(provider =>
 
 builder.Services.AddScoped<IRepository<User>>(provider =>
     provider.GetRequiredService<IRepositoryFactory>().Create<User>());
+
+// --- Specific repositories (wrap generic; home for entity-specific logic) ---
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 // --- Application services ---
 builder.Services.AddScoped<IProductService, ProductService>();
